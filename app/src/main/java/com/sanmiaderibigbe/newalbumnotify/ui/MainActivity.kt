@@ -6,13 +6,18 @@ import android.arch.lifecycle.Observer
 import android.arch.lifecycle.ViewModel
 import android.arch.lifecycle.ViewModelProvider
 import android.arch.lifecycle.ViewModelProviders
+import android.content.Context
 import android.content.pm.PackageManager
+import android.net.ConnectivityManager
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import android.support.v4.app.ActivityCompat
 import android.support.v4.content.ContextCompat
 import android.util.Log
+import android.view.View
+import android.widget.Toast
 import com.sanmiaderibigbe.newalbumnotify.R
+import com.sanmiaderibigbe.newalbumnotify.data.remote.NetWorkState
 import kotlinx.android.synthetic.main.activity_main.*
 
 class MainActivity : AppCompatActivity() {
@@ -24,6 +29,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
         viewModel = ViewModelProviders.of(this).get(MainViewModel::class.java)
         getPermission()
+
 
         getNewSongs()
     }
@@ -60,6 +66,7 @@ class MainActivity : AppCompatActivity() {
 
 
     private fun getArtistList() {
+
         viewModel.getArtistsOnPhoneList().observe(this, Observer { artist ->
             Log.d("Art", artist.toString())
             artist?.forEach {
@@ -68,11 +75,55 @@ class MainActivity : AppCompatActivity() {
         })
     }
 
-    private  fun getNewSongs(){
-        viewModel.getNewSongsOnline().observe(this, Observer { songs ->
-            songs?.forEach {
-                artists.append("$it.toString() \n")
+
+    private fun observeNetworkState() {
+        viewModel.getNeworkstate().observe(this, Observer { network: NetWorkState? ->
+
+            when (network) {
+                is NetWorkState.NotLoaded -> {
+                    Toast.makeText(this, "Not loaded", Toast.LENGTH_SHORT).show()
+                }
+
+                is NetWorkState.Loading -> {
+                    Toast.makeText(this, "Loading", Toast.LENGTH_SHORT).show()
+                    showProgressBar()
+                }
+
+                is NetWorkState.Success -> {
+                    hideProgressBar()
+                    Toast.makeText(this, "Success", Toast.LENGTH_SHORT).show()
+                }
+
+                is NetWorkState.Error -> {
+                    val netWorkError: NetWorkState.Error = network
+                    Toast.makeText(this, netWorkError.errorMessage, Toast.LENGTH_SHORT).show()
+                }
             }
+        })
+    }
+
+    private  fun showProgressBar(){
+        progressBar.visibility = View.VISIBLE
+        progressBar.visibility = View.INVISIBLE
+    }
+
+    private  fun hideProgressBar() {
+        progressBar.visibility = View.INVISIBLE
+        artists.visibility = View.VISIBLE
+    }
+
+
+    private fun isNetworkAvailable(): Boolean {
+        val connectivityManager = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val activeNetworkInfo = connectivityManager.activeNetworkInfo
+        return activeNetworkInfo != null && activeNetworkInfo.isConnected
+    }
+
+    private  fun getNewSongs(){
+        observeNetworkState()
+        viewModel.getNewSongsOnline().observe(this, Observer { it ->
+            Log.d("main", it.toString())
+            artists.text = it?.size.toString()
         })
     }
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {

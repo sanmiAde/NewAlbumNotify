@@ -20,7 +20,7 @@ import retrofit2.Response
 
 class Repository(private val application: Application) {
 
-    val networkState: MutableLiveData<NetWorkState> = MutableLiveData()
+    private val networkState: MutableLiveData<NetWorkState> = MutableLiveData()
     private val TAG = "Respository"
     private val localDao: LocalSongDao
 
@@ -90,10 +90,11 @@ class Repository(private val application: Application) {
 
         remoteSongs.forEach {
 
-            localSongDtos.add(LocalSong(0, it.artistName, it.songName, it.pictureURL, it.releaseDate))
+            localSongDtos.add(LocalSong( it.songName!!, it.artistName!!, it.pictureURL, it.releaseDate))
 
         }
 
+        Log.d(TAG, localSongDtos.size.toString())
         return localSongDtos
 
     }
@@ -140,6 +141,10 @@ class Repository(private val application: Application) {
 
         }
         return artistListLiveData
+    }
+
+    fun getNetworkState(): LiveData<NetWorkState> {
+        return networkState
     }
 
     companion object {

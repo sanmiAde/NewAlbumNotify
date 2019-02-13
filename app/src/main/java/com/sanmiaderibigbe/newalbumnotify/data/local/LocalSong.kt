@@ -4,16 +4,12 @@ import android.arch.persistence.room.Entity
 import android.arch.persistence.room.PrimaryKey
 import android.support.annotation.NonNull
 
-@Entity(tableName = "song_list_table")
+@Entity(tableName = "song_list_table", primaryKeys = ["songName","artistName"])
 data class LocalSong(
-
     @NonNull
-    @PrimaryKey
-    var id: Int? = 0,
-
-    val songName: String?,
-
-    val artistName: String?,
+    val songName: String,
+    @NonNull
+    val artistName: String,
 
     val pictureURL: String?,
 

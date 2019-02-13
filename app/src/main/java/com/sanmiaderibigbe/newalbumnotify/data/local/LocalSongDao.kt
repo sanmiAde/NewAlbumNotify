@@ -12,6 +12,8 @@ interface LocalSongDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insertSongs(localSongs: List<LocalSong>)
 
-    @Query("SELECT * FROM  song_list_table ORDER BY id ASC")
+
+
+    @Query("SELECT * FROM  song_list_table ORDER BY releaseDate DESC")
     fun loadAllSongs(): LiveData<List<LocalSong>>
 }
