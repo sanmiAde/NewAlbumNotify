@@ -14,8 +14,6 @@ data class LocalSong(
     val pictureURL: String?,
 
     val releaseDate: String?
-
-
 )
 
 

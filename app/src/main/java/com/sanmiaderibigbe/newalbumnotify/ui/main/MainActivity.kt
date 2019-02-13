@@ -1,10 +1,7 @@
-package com.sanmiaderibigbe.newalbumnotify.ui
+package com.sanmiaderibigbe.newalbumnotify.ui.main
 
 import android.Manifest
-import android.arch.lifecycle.AndroidViewModel
 import android.arch.lifecycle.Observer
-import android.arch.lifecycle.ViewModel
-import android.arch.lifecycle.ViewModelProvider
 import android.arch.lifecycle.ViewModelProviders
 import android.content.Context
 import android.content.pm.PackageManager
@@ -13,25 +10,50 @@ import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import android.support.v4.app.ActivityCompat
 import android.support.v4.content.ContextCompat
+import android.support.v7.widget.GridLayoutManager
+import android.support.v7.widget.RecyclerView
 import android.util.Log
 import android.view.View
 import android.widget.Toast
 import com.sanmiaderibigbe.newalbumnotify.R
+
 import com.sanmiaderibigbe.newalbumnotify.data.remote.NetWorkState
+import com.sanmiaderibigbe.newalbumnotify.ui.adapter.SongListDecoration
+import com.sanmiaderibigbe.newalbumnotify.ui.adapter.SongsAdapter
 import kotlinx.android.synthetic.main.activity_main.*
+
+
+
 
 class MainActivity : AppCompatActivity() {
 
     private  lateinit var viewModel: MainViewModel
-
+    private  lateinit var adapter: SongsAdapter
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         viewModel = ViewModelProviders.of(this).get(MainViewModel::class.java)
         getPermission()
+        adapter = initRecyclerView()
 
+        when {
+            isNetworkAvailable() -> {
+                observeNetworkState()
+                getNewSongs()
 
-        getNewSongs()
+            }
+            else -> {
+                showProgressBar()
+                getSongsOffline(adapter)
+                hideProgressBar()
+            }
+        }
+    }
+
+    private fun getSongsOffline(adapter: SongsAdapter) {
+        viewModel.getData().observe(this, Observer { it ->
+            adapter.setTodoList(it)
+        })
     }
 
     private fun getPermission(){
@@ -51,7 +73,7 @@ class MainActivity : AppCompatActivity() {
               // No explanation needed, we can request the permission.
               ActivityCompat.requestPermissions(this,
                   arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE),
-                  Companion.MY_PERMISSIONS_REQUEST_READ_CONTACTS
+                  MY_PERMISSIONS_REQUEST_READ_CONTACTS
               )
 
               // MY_PERMISSIONS_REQUEST_READ_CONTACTS is an
@@ -70,7 +92,7 @@ class MainActivity : AppCompatActivity() {
         viewModel.getArtistsOnPhoneList().observe(this, Observer { artist ->
             Log.d("Art", artist.toString())
             artist?.forEach {
-                artists.append("$it \n")
+                //artists.append("$it \n")
             }
         })
     }
@@ -81,6 +103,7 @@ class MainActivity : AppCompatActivity() {
 
             when (network) {
                 is NetWorkState.NotLoaded -> {
+
                     Toast.makeText(this, "Not loaded", Toast.LENGTH_SHORT).show()
                 }
 
@@ -104,12 +127,12 @@ class MainActivity : AppCompatActivity() {
 
     private  fun showProgressBar(){
         progressBar.visibility = View.VISIBLE
-        progressBar.visibility = View.INVISIBLE
+        song_recyler_view.visibility = View.INVISIBLE
     }
 
     private  fun hideProgressBar() {
         progressBar.visibility = View.INVISIBLE
-        artists.visibility = View.VISIBLE
+        song_recyler_view.visibility = View.VISIBLE
     }
 
 
@@ -120,15 +143,29 @@ class MainActivity : AppCompatActivity() {
     }
 
     private  fun getNewSongs(){
-        observeNetworkState()
+
         viewModel.getNewSongsOnline().observe(this, Observer { it ->
             Log.d("main", it.toString())
-            artists.text = it?.size.toString()
+            adapter.setTodoList(it)
+
         })
     }
+
+
+    private fun initRecyclerView(): SongsAdapter {
+        val adapter = SongsAdapter(this)
+        val recyclerView = findViewById<RecyclerView>(R.id.song_recyler_view)
+        recyclerView.adapter = adapter
+        recyclerView.layoutManager = GridLayoutManager(this, 2,  GridLayoutManager.VERTICAL, false)
+        val largePadding = resources.getDimensionPixelSize(R.dimen.shr_product_grid_spacing)
+        val smallPadding = resources.getDimensionPixelSize(R.dimen.shr_product_grid_spacing_small)
+        recyclerView.addItemDecoration(SongListDecoration(largePadding, smallPadding))
+        return adapter
+    }
+
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
         when (requestCode) {
-            Companion.MY_PERMISSIONS_REQUEST_READ_CONTACTS -> {
+            MY_PERMISSIONS_REQUEST_READ_CONTACTS -> {
                 // If request is cancelled, the result arrays are empty.
                 if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     // permission was granted, do your work....

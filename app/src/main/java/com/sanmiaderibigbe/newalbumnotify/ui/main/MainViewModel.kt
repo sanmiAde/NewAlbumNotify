@@ -1,4 +1,4 @@
-package com.sanmiaderibigbe.newalbumnotify.ui
+package com.sanmiaderibigbe.newalbumnotify.ui.main
 
 import android.app.Application
 import android.arch.lifecycle.AndroidViewModel
@@ -21,5 +21,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun getNeworkstate() : LiveData<NetWorkState> {
         return  repository.getNetworkState()
+    }
+
+    fun getData(): LiveData<List<LocalSong>>  {
+        return  repository.getOfflineArtists()
     }
 }

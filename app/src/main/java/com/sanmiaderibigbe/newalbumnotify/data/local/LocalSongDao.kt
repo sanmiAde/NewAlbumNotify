@@ -14,6 +14,6 @@ interface LocalSongDao {
 
 
 
-    @Query("SELECT * FROM  song_list_table ORDER BY releaseDate DESC")
+    @Query("SELECT * FROM  song_list_table ORDER BY releaseDate ASC")
     fun loadAllSongs(): LiveData<List<LocalSong>>
 }

@@ -147,6 +147,10 @@ class Repository(private val application: Application) {
         return networkState
     }
 
+    fun getOfflineArtists(): LiveData<List<LocalSong>> {
+            return localDao.loadAllSongs()
+    }
+
     companion object {
         private var instance: Repository? = null
 
