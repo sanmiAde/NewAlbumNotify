@@ -24,6 +24,8 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
         viewModel = ViewModelProviders.of(this).get(MainViewModel::class.java)
         getPermission()
+
+        getNewSongs()
     }
 
     private fun getPermission(){
@@ -52,13 +54,13 @@ class MainActivity : AppCompatActivity() {
           }
       } else {
           // Permission has already been granted
-          getArtistList()
+          //getArtistList()
       }
   }
 
 
     private fun getArtistList() {
-        viewModel.getArtistList().observe(this, Observer { artist ->
+        viewModel.getArtistsOnPhoneList().observe(this, Observer { artist ->
             Log.d("Art", artist.toString())
             artist?.forEach {
                 artists.append("$it \n")
@@ -66,13 +68,20 @@ class MainActivity : AppCompatActivity() {
         })
     }
 
+    private  fun getNewSongs(){
+        viewModel.getNewSongsOnline().observe(this, Observer { songs ->
+            songs?.forEach {
+                artists.append("$it.toString() \n")
+            }
+        })
+    }
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
         when (requestCode) {
             Companion.MY_PERMISSIONS_REQUEST_READ_CONTACTS -> {
                 // If request is cancelled, the result arrays are empty.
                 if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     // permission was granted, do your work....
-                    getArtistList()
+                    //getArtistList()
 
                 } else {
                     // permission denied
