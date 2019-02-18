@@ -3,11 +3,14 @@ package com.sanmiaderibigbe.newalbumnotify.data
 import android.arch.persistence.room.Database
 import android.arch.persistence.room.Room
 import android.arch.persistence.room.RoomDatabase
+import android.arch.persistence.room.TypeConverters
 import android.content.Context
+import com.sanmiaderibigbe.newalbumnotify.data.local.DateConverter
 import com.sanmiaderibigbe.newalbumnotify.data.local.LocalSong
 import com.sanmiaderibigbe.newalbumnotify.data.local.LocalSongDao
 
 @Database(entities = [LocalSong::class], version = 1)
+@TypeConverters(DateConverter::class)
 abstract class AppDatabase : RoomDatabase() {
 
     abstract fun localSongDao() : LocalSongDao

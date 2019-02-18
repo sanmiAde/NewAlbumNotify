@@ -6,6 +6,9 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import com.sanmiaderibigbe.newalbumnotify.data.local.LocalSong
 import com.sanmiaderibigbe.newalbumnotify.databinding.SongListItemBinding
+import android.text.method.TextKeyListener.clear
+
+
 
 class SongsAdapter(context: Context) : RecyclerView.Adapter<SongsAdapter.ViewHolder>() {
 
@@ -17,10 +20,17 @@ class SongsAdapter(context: Context) : RecyclerView.Adapter<SongsAdapter.ViewHol
         return ViewHolder(binding)
     }
 
-    fun setTodoList(songs : List<LocalSong>?) {
+    fun setTodoList(songs: List<LocalSong>?) {
         songList = songs
         notifyDataSetChanged()
     }
+
+    fun clear() {
+        songList = null
+        notifyDataSetChanged()
+    }
+
+
 
     override fun getItemCount(): Int =  songList?.size ?: 0
 

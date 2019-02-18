@@ -16,6 +16,7 @@ import android.util.Log
 import android.view.View
 import android.widget.Toast
 import com.sanmiaderibigbe.newalbumnotify.R
+import com.sanmiaderibigbe.newalbumnotify.data.local.LocalSong
 
 import com.sanmiaderibigbe.newalbumnotify.data.remote.NetWorkState
 import com.sanmiaderibigbe.newalbumnotify.ui.adapter.SongListDecoration
@@ -24,22 +25,38 @@ import kotlinx.android.synthetic.main.activity_main.*
 
 
 
-
 class MainActivity : AppCompatActivity() {
 
-    private  lateinit var viewModel: MainViewModel
-    private  lateinit var adapter: SongsAdapter
+    private lateinit var viewModel: MainViewModel
+    private lateinit var adapter: SongsAdapter
+    private val TAG: String= "mainSong"
+
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         viewModel = ViewModelProviders.of(this).get(MainViewModel::class.java)
         getPermission()
         adapter = initRecyclerView()
+        getNewSongs()
 
+        button.setOnClickListener {
+           // val songsBeingReleasedToday : List<LocalSong>? = viewModel.getArtistReleasedOnCurrentDate()
+            //Log.d(TAG, songsBeingReleasedToday.toString())
+            viewModel.initNotificationWorker()
+
+
+        }
+
+
+
+    }
+
+    private fun getNewSongs() {
         when {
             isNetworkAvailable() -> {
                 observeNetworkState()
-                getNewSongs()
+                getNewSongsData()
 
             }
             else -> {
@@ -48,6 +65,8 @@ class MainActivity : AppCompatActivity() {
                 hideProgressBar()
             }
         }
+
+
     }
 
     private fun getSongsOffline(adapter: SongsAdapter) {
@@ -56,38 +75,45 @@ class MainActivity : AppCompatActivity() {
         })
     }
 
-    private fun getPermission(){
-      // Here, thisActivity is the current activity
-      if (ContextCompat.checkSelfPermission(this,
-              Manifest.permission.READ_EXTERNAL_STORAGE)
-          != PackageManager.PERMISSION_GRANTED) {
+    private fun getPermission() {
+        // Here, thisActivity is the current activity
+        if (ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.READ_EXTERNAL_STORAGE
+            )
+            != PackageManager.PERMISSION_GRANTED
+        ) {
 
-          // Permission is not granted
-          // Should we show an explanation?
-          if (ActivityCompat.shouldShowRequestPermissionRationale(this,
-                  Manifest.permission.READ_EXTERNAL_STORAGE)) {
-              // Show an explanation to the user *asynchronously* -- don't block
-              // this thread waiting for the user's response! After the user
-              // sees the explanation, try again to request the permission.
-          } else {
-              // No explanation needed, we can request the permission.
-              ActivityCompat.requestPermissions(this,
-                  arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE),
-                  MY_PERMISSIONS_REQUEST_READ_CONTACTS
-              )
+            // Permission is not granted
+            // Should we show an explanation?
+            if (ActivityCompat.shouldShowRequestPermissionRationale(
+                    this,
+                    Manifest.permission.READ_EXTERNAL_STORAGE
+                )
+            ) {
+                // Show an explanation to the user *asynchronously* -- don't block
+                // this thread waiting for the user's response! After the user
+                // sees the explanation, try again to request the permission.
+            } else {
+                // No explanation needed, we can request the permission.
+                ActivityCompat.requestPermissions(
+                    this,
+                    arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE),
+                    MY_PERMISSIONS_REQUEST_READ_CONTACTS
+                )
 
-              // MY_PERMISSIONS_REQUEST_READ_CONTACTS is an
-              // app-defined int constant. The callback method gets the
-              // result of the request.
-          }
-      } else {
-          // Permission has already been granted
-          //getArtistList()
-      }
-  }
+                // MY_PERMISSIONS_REQUEST_READ_CONTACTS is an
+                // app-defined int constant. The callback method gets the
+                // result of the request.
+            }
+        } else {
+            // Permission has already been granted
+            //getArtistList()
+        }
+    }
 
 
-    private fun getArtistList() {
+    private fun getArtistListFromPhone() {
 
         viewModel.getArtistsOnPhoneList().observe(this, Observer { artist ->
             Log.d("Art", artist.toString())
@@ -125,12 +151,12 @@ class MainActivity : AppCompatActivity() {
         })
     }
 
-    private  fun showProgressBar(){
+    private fun showProgressBar() {
         progressBar.visibility = View.VISIBLE
         song_recyler_view.visibility = View.INVISIBLE
     }
 
-    private  fun hideProgressBar() {
+    private fun hideProgressBar() {
         progressBar.visibility = View.INVISIBLE
         song_recyler_view.visibility = View.VISIBLE
     }
@@ -142,13 +168,13 @@ class MainActivity : AppCompatActivity() {
         return activeNetworkInfo != null && activeNetworkInfo.isConnected
     }
 
-    private  fun getNewSongs(){
+    private fun getNewSongsData() {
 
         viewModel.getNewSongsOnline().observe(this, Observer { it ->
             Log.d("main", it.toString())
             adapter.setTodoList(it)
-
         })
+
     }
 
 
@@ -156,7 +182,7 @@ class MainActivity : AppCompatActivity() {
         val adapter = SongsAdapter(this)
         val recyclerView = findViewById<RecyclerView>(R.id.song_recyler_view)
         recyclerView.adapter = adapter
-        recyclerView.layoutManager = GridLayoutManager(this, 2,  GridLayoutManager.VERTICAL, false)
+        recyclerView.layoutManager = GridLayoutManager(this, 2, GridLayoutManager.VERTICAL, false)
         val largePadding = resources.getDimensionPixelSize(R.dimen.shr_product_grid_spacing)
         val smallPadding = resources.getDimensionPixelSize(R.dimen.shr_product_grid_spacing_small)
         recyclerView.addItemDecoration(SongListDecoration(largePadding, smallPadding))

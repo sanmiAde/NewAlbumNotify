@@ -3,9 +3,12 @@ package com.sanmiaderibigbe.newalbumnotify.data
 import android.app.Application
 import android.arch.lifecycle.LiveData
 import android.arch.lifecycle.MutableLiveData
+import android.arch.lifecycle.Observer
 import android.net.Uri
+import android.os.AsyncTask
 import android.provider.MediaStore
 import android.util.Log
+import android.widget.Toast
 import com.sanmiaderibigbe.newalbumnotify.data.local.LocalSong
 import com.sanmiaderibigbe.newalbumnotify.data.local.LocalSongDao
 import com.sanmiaderibigbe.newalbumnotify.data.remote.NetWorkState
@@ -13,17 +16,20 @@ import com.sanmiaderibigbe.newalbumnotify.data.remote.NewSongList
 import com.sanmiaderibigbe.newalbumnotify.data.remote.RetrofitInstance
 import com.sanmiaderibigbe.newalbumnotify.data.remote.Song
 import org.jetbrains.anko.doAsync
+import org.jetbrains.anko.runOnUiThread
 import org.jetbrains.anko.uiThread
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
+import java.text.SimpleDateFormat
+import java.util.*
 
 class Repository(private val application: Application) {
 
     private val networkState: MutableLiveData<NetWorkState> = MutableLiveData()
     private val TAG = "Respository"
     private val localDao: LocalSongDao
-
+    private  var songsBeingReleased: List<LocalSong> = emptyList()
     init {
         val db = AppDatabase.getDatabase(application, false)
         localDao = db.localSongDao()
@@ -90,7 +96,15 @@ class Repository(private val application: Application) {
 
         remoteSongs.forEach {
 
-            localSongDtos.add(LocalSong( it.songName!!, it.artistName!!, it.pictureURL, it.releaseDate))
+            localSongDtos.add(
+                LocalSong(
+                    it.songName!!,
+                    it.artistName!!,
+                    it.pictureURL,
+                    it.releaseDate,
+                    convertDateStringToDateObject(it.releaseDate!!)
+                )
+            )
 
         }
 
@@ -98,6 +112,13 @@ class Repository(private val application: Application) {
         return localSongDtos
 
     }
+
+    private fun convertDateStringToDateObject(dateString: String): Date {
+        val format = SimpleDateFormat("d MMMM yyyy")
+        return format.parse(dateString)
+    }
+
+
 
 
     /**
@@ -148,8 +169,72 @@ class Repository(private val application: Application) {
     }
 
     fun getOfflineArtists(): LiveData<List<LocalSong>> {
-            return localDao.loadAllSongs()
+        return localDao.loadAllSongs()
     }
+
+//    fun getReleasedSongList() : List<LocalSong> {
+//        return  someTask(localDao).doInBackground()
+//    }
+
+//    class someTask(val songDao: LocalSongDao) : AsyncTask<Void, Void, List<LocalSong>>() {
+//        public override fun doInBackground(vararg params: Void?):List<LocalSong> {
+//            // ...
+//            val list = songDao.loadedSongPublishedOnCurrentDate().toMutableList()
+//            val currentDateString = convertDateToString(Date()).toLowerCase()
+//            return list.filter { it.releaseDate?.toLowerCase() == currentDateString }
+//        }
+//
+//        override fun onPreExecute() {
+//            super.onPreExecute()
+//            // ...
+//        }
+//
+//
+//
+//        private fun convertDateToString(date: Date): String {
+//            val dateFormat = SimpleDateFormat("d MMMM yyyy")
+//            return dateFormat.format(date)
+//        }
+//    }
+
+
+
+
+    fun getSongsReleasedOnToday(): List<LocalSong> {
+        GetSongBeingReleasedToday(localDao).execute()
+        return songsBeingReleased
+    }
+
+    private fun returnReleasedSongList(songList: List<LocalSong>?){
+        songsBeingReleased =  songList!!
+    }
+
+
+    fun getSongPublishedOnCurrentDate(): List<LocalSong>? {
+
+        var releasedSongList: List<LocalSong>? = emptyList()
+         doAsync {
+            val list = localDao.loadedSongPublishedOnCurrentDate().toMutableList()
+            val currentDateString = convertDateToString(Date()).toLowerCase()
+            val filteredList = list.filter { it.releaseDate?.toLowerCase() == currentDateString }
+             releasedSongList = filteredList
+            application.runOnUiThread {
+
+                Toast.makeText(application, releasedSongList.toString(), Toast.LENGTH_LONG).show()
+            }
+
+//            val publishedObserver: Observer<List<LocalSong>> = Observer { localSongs -> TODO("Do something with list") }
+//            localDao.loadAllSongs().observeForever(publishedObserver)
+        }
+
+        return releasedSongList
+
+    }
+
+        private fun convertDateToString(date: Date): String {
+            val dateFormat = SimpleDateFormat("d MMMM yyyy")
+            return dateFormat.format(date)
+        }
 
     companion object {
         private var instance: Repository? = null
@@ -162,4 +247,41 @@ class Repository(private val application: Application) {
             return instance!!
         }
     }
+
+    inner class GetSongBeingReleasedToday(private val doa: LocalSongDao) : AsyncTask<String, String, List<LocalSong>>(){
+        override fun doInBackground(vararg params: String?): List<LocalSong> {
+            val list = doa.loadedSongPublishedOnCurrentDate().toMutableList()
+            val currentDateString = convertDateToString(Date()).toLowerCase()
+            return  list.filter { it.releaseDate?.toLowerCase() == currentDateString }
+        }
+
+        private fun convertDateToString(date: Date): String {
+            val dateFormat = SimpleDateFormat("d MMMM yyyy")
+            return dateFormat.format(date)
+        }
+
+        /**
+         *
+         * Runs on the UI thread after [.doInBackground]. The
+         * specified result is the value returned by [.doInBackground].
+         *
+         *
+         * This method won't be invoked if the task was cancelled.
+         *
+         * @param result The result of the operation computed by [.doInBackground].
+         *
+         * @see .onPreExecute
+         *
+         * @see .doInBackground
+         *
+         * @see .onCancelled
+         */
+        override fun onPostExecute(result: List<LocalSong>?) {
+            super.onPostExecute(result)
+            returnReleasedSongList(result!!)
+
+        }
+    }
 }
+
+
